@@ -42,8 +42,8 @@ class Plan(BaseModel):
     amenities: List[str] = Field(default_factory=list)
     need_weather: bool = False
     need_hotels: bool = False
-    min_rating: int = 4
-    hotel_limit: int = 10
+    min_rating: int = 3
+    hotel_limit: int = 50
     suggestion_region: str = "Europe"
 
 
@@ -200,7 +200,6 @@ def build_orchestrator_graph(*, suggestion_executor):
         return {"plan": plan.model_dump()}
 
     def tool_calls_node(state: OrchestratorState):
-        """Produce weather and hotel tool calls based on plan."""
         plan = state.get("plan") or {}
         city = (plan.get("city") or "").strip()
 
@@ -217,8 +216,8 @@ def build_orchestrator_graph(*, suggestion_executor):
                     "name": "search_hotels",
                     "args": {
                         "city": city,
-                        "min_rating": int(plan.get("min_rating", 4)),
-                        "limit": int(plan.get("hotel_limit", 10)),
+                        "min_rating": int(plan.get("min_rating", 3)),
+                        "limit": int(plan.get("hotel_limit", 50)),
                         "amenities": plan.get("amenities") or None,
                     },
                     "id": "call_hotels_1",
@@ -231,7 +230,6 @@ def build_orchestrator_graph(*, suggestion_executor):
         return {"messages": [AIMessage(content="", tool_calls=calls)]}
 
     def price_calls_node(state: OrchestratorState):
-        """After hotels are fetched, fire price searches for the top 3."""
         plan = state.get("plan") or {}
         if not plan.get("need_hotels"):
             return {}
@@ -253,13 +251,12 @@ def build_orchestrator_graph(*, suggestion_executor):
                 "args": {"hotel_name": h["name"], "city": city},
                 "id": f"call_price_{i}",
             }
-            for i, h in enumerate(hotels[:3])
+            for i, h in enumerate(hotels[:5])
         ]
 
         return {"messages": [AIMessage(content="", tool_calls=calls)]}
 
     def suggestion_node(state: OrchestratorState):
-        """Invoke SuggestionAgent when the plan requests it."""
         last_user = _last_user_message(state["messages"])
 
         result = suggestion_executor.invoke(
@@ -289,7 +286,6 @@ def build_orchestrator_graph(*, suggestion_executor):
         last_user = _last_user_message(state["messages"])
         context_text = _context_from_blocks(blocks)
 
-        # Collect all hotel price blocks into one summary for the LLM
         price_blocks = [b for b in blocks if b["type"] == "hotel_price"]
         price_summary = ""
         if price_blocks:
@@ -314,21 +310,17 @@ def build_orchestrator_graph(*, suggestion_executor):
         final_obj = {"message": getattr(resp, "content", ""), "blocks": blocks}
         return {"messages": [resp], "final": final_obj}
 
-    # Routing functions
-
     def route_from_plan(state: OrchestratorState):
         r = (state.get("plan") or {}).get("route")
         if r == "suggestion_only":
             return "suggestion"
-        return "tool_calls"  # tools_only or tools_then_suggestion both start with tools
+        return "tool_calls"
 
     def after_price_tools(state: OrchestratorState):
         r = (state.get("plan") or {}).get("route")
         if r == "tools_then_suggestion":
             return "suggestion"
         return "final"
-
-    # Graph
 
     graph = StateGraph(OrchestratorState)
 

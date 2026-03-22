@@ -83,9 +83,11 @@ class WebSearchTool:
         if include_raw:
             out["raw_results"] = raw_results
         return out
+    
+    
     def search_hotel_price(self, hotel_name: str, city: str) -> Dict[str, Any]:
         query = f"{hotel_name} {city} hotel price per night"
-        raw = self.search(query, max_results=3, max_sentences=2, include_raw=False)
+        raw = self.search(query, max_results=5, max_sentences=2, include_raw=False)
         return {
             "hotel": hotel_name,
             "city": city,

@@ -1,0 +1,28 @@
+.app-shell {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+  background: var(--bg-base);
+  position: relative;
+}
+
+.app-shell::before {
+  content: '';
+  position: fixed;
+  top: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 800px;
+  height: 500px;
+  background: radial-gradient(ellipse at 50% 0%, rgba(200, 169, 110, 0.06) 0%, transparent 65%);
+  pointer-events: none;
+  z-index: 0;
+}
+
+.app-main {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  position: relative;
+  z-index: 1;
+}

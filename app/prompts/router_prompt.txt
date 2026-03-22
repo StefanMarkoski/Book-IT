@@ -36,9 +36,8 @@ Field rules:
 - amenities: normalized lowercase tokens such as ["wifi","pool","gym","spa","parking","restaurant","bar"].
 - need_weather: true if weather is requested or mentioned in a condition.
 - need_hotels: true if hotels or accommodation are requested.
-- min_rating: default 4 unless the user specifies another rating.
-- hotel_limit: default 10 unless the user specifies another limit.
+- min_rating: default 3 unless the user specifies another rating. Never go above 4.
+- hotel_limit: default 50 unless the user specifies another limit. Never go below 20.
 - suggestion_region: default "Europe" unless another region is requested.
 
-User message:
-{user_message}
+User message: {user_message}
